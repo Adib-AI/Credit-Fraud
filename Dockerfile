@@ -2,9 +2,9 @@ FROM python:3.9
 
 WORKDIR /app
 
-COPY ./requirements.txt /code/requirements.txts
+COPY ./requirements.txt /app/requirements.txts
 
-RUN pip install -r /code/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 COPY . .
 
