@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CSV untuk Prediksi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f3f4f6;
+            flex-direction: column;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:disabled {
+            background-color: #ccc;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #jsonOutput {
+            display: none; /*Tabel untuk menyembunyikan hasil upload data*/
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Upload CSV untuk Prediksi</h2>
+        <input type="file" id="fileInput" accept=".csv">
+        <button onclick="uploadFile()">Upload Data</button>
+        <button id="sendButton" onclick="sendToAPI()" disabled>Kirim ke API</button>
+
+        <!-- Tabel untuk menampilkan hasil prediksi -->
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>Nomor</th>
+                    <th>Prediction</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Hasil prediksi akan dimasukkan di sini -->
+            </tbody>
+        </table>
+    <pre id="jsonOutput"></pre>
+    </div>
+
+    <script>
+        let processedData = []; // Simpan data setelah parsing
+
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            //const jsonOutput = document.getElementById("jsonOutput");
+            const sendButton = document.getElementById("sendButton");
+
+            if (fileInput.files.length === 0) {
+                alert("Pilih file CSV terlebih dahulu");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const csvData = event.target.result;
+
+                Papa.parse(csvData, {
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        let rawData = results.data;
+
+                        if (rawData.length < 2) {
+                            jsonOutput.textContent = "File CSV kosong atau hanya memiliki header.";
+                            sendButton.disabled = true;
+                            return;
+                        }
+
+                        let header = rawData[0];  // Ambil nama feature dari header
+                        let body = rawData.slice(1);  // Ambil data tanpa header
+
+                        // Hilangkan kolom pertama (misalnya ID/timestamp)
+                        header = header.slice(1);
+                        body = body.map(row => row.slice(1));
+
+                        let jsonData = {
+                            "features": header,
+                            "data": body
+                        };
+
+                        jsonOutput.textContent = JSON.stringify(jsonData, null, 2);
+                        sendButton.disabled = false;
+                    }
+                });
+            };
+
+            reader.readAsText(file);
+        }
+
+        function sendToAPI() {
+            if (!jsonOutput.textContent || jsonOutput.textContent === "Hasil JSON akan muncul di sini...") {
+                alert("Tidak ada data untuk dikirim. Silakan upload CSV terlebih dahulu.");
+                return;
+            }
+
+            let jsonData = JSON.parse(jsonOutput.textContent);
+
+            fetch("/predict", { 
+                method: "POST",
+                mode: "cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                console.log("Status Code:", response.status); // Debugging
+                return response.json(); // Konversi ke JSON
+            })
+            .then(result => {
+                console.log("Respon dari API:", result); // Debugging
+                document.getElementById("jsonOutput").textContent = JSON.stringify(result, null, 2);
+
+                // Memasukkan hasil prediksi ke dalam tabel
+                updateTable(result.prediction);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Gagal mengirim data ke API.");
+            });
+        }
+
+        function updateTable(predictions) {
+            const tableBody = document.querySelector("#resultTable tbody");
+            tableBody.innerHTML = ""; // Bersihkan tabel sebelum menambahkan data baru
+
+            predictions.forEach((prediction, index) => {
+                let row = document.createElement("tr");
+                row.innerHTML = `<td>${index + 1}</td><td>${prediction}</td>`;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+
+</body>
+</html>
