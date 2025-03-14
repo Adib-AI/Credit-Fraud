@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import numpy as np
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
@@ -13,6 +14,8 @@ app.add_middleware(
     allow_methods=["*"],  # Izinkan semua metode (GET, POST, OPTIONS, dll)
     allow_headers=["*"],  # Izinkan semua header
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.options("/predict")
 async def options_handler():
