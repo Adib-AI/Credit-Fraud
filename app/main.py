@@ -1,9 +1,22 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import numpy as np
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Bisa diubah ke ["*"] untuk mengizinkan semua
+    allow_credentials=True,
+    allow_methods=["*"],  # Izinkan semua metode (GET, POST, OPTIONS, dll)
+    allow_headers=["*"],  # Izinkan semua header
+)
+
+@app.options("/predict")
+async def options_handler():
+    return {"message": "OK"}
 
 with open("app/rf.pkl", "rb") as model_file:
     model = joblib.load(model_file)
