@@ -41,13 +41,13 @@ def root():
 @app.post("/predict")
 async def predict(input_data: InputData):
     X = np.array(input_data.data) #Jika menggunakan multiple data tidak perlu dilakukan reshape
-    print("Data yang diterima API:", input_data.dict())
+    # print("Data yang diterima API:", input_data.dict())
     select_feature = [0, 2, 3, 6, 9, 10, 11, 13, 15, 16, 17]
     filter_data = X[:,select_feature]
     X_transform = skew_model.transform(filter_data)
     X_scaler = scaler_model.transform(X_transform)
     X_final = X_scaler[:,1:]
-    print("Data Hasil Processing:", X_final)
+    # print("Data Hasil Processing:", X_final)
     predict = model.predict(X_final).tolist()
     predict_labels = ["Non" if p == 0 else "Fraud" for p in predict] 
     return {"prediction": predict_labels}
