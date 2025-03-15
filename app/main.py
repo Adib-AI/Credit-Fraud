@@ -42,7 +42,7 @@ def root():
 async def predict(input_data: InputData):
     X = np.array(input_data.data) #Jika menggunakan multiple data tidak perlu dilakukan reshape
     # print("Data yang diterima API:", input_data.dict())
-    select_feature = [1, 3, 4, 7, 10, 11, 12, 14, 16, 17, 18] 
+    select_feature = [0, 2, 3, 6, 9, 10, 11, 13, 15, 16, 17]
     filter_data = X[:,select_feature]
     X_transform = skew_model.transform(filter_data)
     X_scaler = scaler_model.transform(X_transform)
